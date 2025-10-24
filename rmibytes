@@ -1,0 +1,45 @@
+import java.rmi.*;
+import java.rmi.registry.*;
+import java.io.*;
+
+// Giao diện từ xa ByteService
+interface ByteService extends Remote {
+    byte[] requestData(String studentCode, String qCode) throws RemoteException;
+    void submitData(String studentCode, String qCode, byte[] data) throws RemoteException;
+}
+
+public class RMIClient {
+    public static void main(String[] args) throws Exception {
+        String host = "203.162.10.109";
+        int port = 1099;
+        String msv = "B22DCVT138";
+        String qCode = "XtlH0fxD";
+
+        // a) Kết nối tới Registry và lookup service
+        Registry reg = LocateRegistry.getRegistry(host, port);
+        ByteService service = (ByteService) reg.lookup("RMIByteService");
+
+        // b) Nhận dữ liệu nhị phân
+        byte[] data = service.requestData(msv, qCode);
+
+        // c) Tách chẵn - lẻ
+        byte[] arranged = splitEvenOdd(data);
+
+        // d) Gửi kết quả
+        service.submitData(msv, qCode, arranged);
+    }
+
+    static byte[] splitEvenOdd(byte[] a) throws Exception {
+        ByteArrayOutputStream even = new ByteArrayOutputStream(a.length);
+        ByteArrayOutputStream odd = new ByteArrayOutputStream(a.length);
+        for (byte b : a) {
+            if ((b & 1) == 0) even.write(b); else odd.write(b);
+        }
+        byte[] e = even.toByteArray();
+        byte[] o = odd.toByteArray();
+        byte[] res = new byte[e.length + o.length];
+        System.arraycopy(e, 0, res, 0, e.length);
+        System.arraycopy(o, 0, res, e.length, o.length);
+        return res;
+    }
+}
